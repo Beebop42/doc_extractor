@@ -60,6 +60,22 @@ def parse(pages: list[str],
           model: str = "google/gemini-2.0-flash-001", 
           model_temperature: float=1.0,
           mime_type: str = "image/png") -> tuple[Attributes | None, dict]:
+    """Extract structured attributes from pages based on predicted category.
+
+    Uses a category-specific prompt and calls the LLM for each page.
+    Results are merged across pages into a single `Attributes` object.
+
+    Args:
+        pages: List of base64-encoded images, one per page.
+        category: Predicted category (e.g. `invoice`, `chat_screenshot`).
+        model: OpenRouter model identifier.
+        model_temperature: Sampling temperature.
+        mime_type: MIME type for the embedded image payload.
+
+    Returns:
+        A tuple of `(attributes_or_none, stats)`. For unknown categories,
+        returns `(None, {})`.
+    """
 
     match category:
         case "invoice":

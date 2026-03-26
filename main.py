@@ -11,7 +11,28 @@ from scorer import score
 from schema import PipelineResult, ProcessingMetadata
 
 
-def run_pipeline(file_path: str, model: str = "google/gemini-2.0-flash-001", model_temperature: float=1.0) -> PipelineResult:
+def run_pipeline(
+    file_path: str,
+    model: str = "google/gemini-2.0-flash-001",
+    model_temperature: float = 1.0,
+) -> PipelineResult:
+    """Run the end-to-end document/screenshot scam detection pipeline.
+
+    This function orchestrates the full flow:
+    reading the input file, converting it into LLM-ready page images,
+    classifying the content type, extracting structured attributes,
+    scoring them with rule-based fraud signals, and persisting the result
+    to the local CSV archive.
+
+    Args:
+        file_path: Path to the input file (`pdf`, `png`, `jpg`, or `jpeg`).
+        model: OpenRouter model identifier used for LLM calls.
+        model_temperature: Sampling temperature for extraction/classification.
+
+    Returns:
+        A `PipelineResult` containing category, extracted fields, rules fired,
+        risk score/label, and processing metadata.
+    """
     log.info("═" * 50)
     log.info(f"Starting pipeline for: {file_path}")
 

@@ -20,6 +20,21 @@ def classify(pages: list[str],
              model: str = "google/gemini-2.0-flash-001", 
              model_temperature: float=1.0, 
              mime_type: str = "image/png") -> tuple[ClassifierResult, dict]:
+    """Classify the input screenshot/document into a content category.
+
+    The classifier sends the first page to the LLM using a JSON-only prompt
+    and returns the predicted category (plus confidence) along with token
+    usage statistics.
+
+    Args:
+        pages: List of base64 page images (one per page).
+        model: OpenRouter model identifier.
+        model_temperature: Sampling temperature.
+        mime_type: MIME type used for the embedded image payload.
+
+    Returns:
+        A tuple of `(classifier_result, stats)`.
+    """
     # Use the first page for classification
     raw, stats = call_llm(CLASSIFY_PROMPT, pages[0], model=model, model_temperature=model_temperature, mime_type=mime_type)
     data = parse_json(raw)

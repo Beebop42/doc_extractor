@@ -5,7 +5,21 @@ from utils import log
 
 
 def preprocess(metadata: FileMetadata, raw_bytes: bytes) -> tuple[list[str], FileMetadata]:
-    """Return list of base64 PNG images (one per page)."""
+    """Convert input bytes into base64-encoded images for LLM usage.
+
+    For images (`png`, `jpg`, `jpeg`), this returns a single base64 payload.
+    For PDFs, it renders each page to a PNG and returns one base64 payload
+    per page.
+
+    Args:
+        metadata: File metadata (including extension).
+        raw_bytes: Raw file bytes read from disk.
+
+    Returns:
+        A tuple of `(pages, metadata)` where `pages` is a list of base64
+        PNG-encoded strings and `metadata.page_count` is updated to the
+        number of pages.
+    """
     ext = metadata.extension
 
     if ext in ("jpg", "jpeg", "png"):

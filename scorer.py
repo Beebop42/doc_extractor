@@ -29,6 +29,14 @@ class RuleResult:
 
 # ── Risk level thresholds ──────────────────────────────────────────────────
 def get_risk_level(score: float) -> str:
+    """Convert a numeric risk score into a discrete risk label.
+
+    Args:
+        score: Total numeric score computed from fired rules.
+
+    Returns:
+        One of: `low`, `medium`, or `high`.
+    """
     if score == 0:
         return "low"
     elif score <= 3:
@@ -40,8 +48,13 @@ def get_risk_level(score: float) -> str:
 # ── Rules ──────────────────────────────────────────────────────────────────
 
 def rule_otp_in_chat(attrs: Attributes) -> RuleResult:
-    """
-    Rule 1: OTP code found in chat screenshot -> score 5.
+    """Rule 1: Detect OTP codes in chat screenshots.
+
+    Args:
+        attrs: Extracted attributes for the content.
+
+    Returns:
+        A `RuleResult` with `fired=True` and score 5 when an OTP is found.
     """
     RULE_ID = "RULE_001"
     fired = (
@@ -59,10 +72,24 @@ def rule_otp_in_chat(attrs: Attributes) -> RuleResult:
 
 
 def rule_url_transaction_in_chat(attrs: Attributes) -> RuleResult:
-    """
-    Rule 2: URL link found in chat screenshot and URL is also present -> score 3.
+    """Rule 2: Detect URL + currency/transaction signals in chat screenshots.
+
+    Args:
+        attrs: Extracted attributes for the content.
+
+    Returns:
+        A `RuleResult` fired when `embedded_url` and `embedded_currency`
+        contain valid (non-empty, non-`N/A`) values.
     """
     def check_if_valid(var: list|str) -> bool:
+        """Check whether a value is present and not a sentinel.
+
+        Args:
+            var: Either a list of strings or a single string value.
+
+        Returns:
+            True if at least one non-empty, non-`N/A` value is present.
+        """
         valid = False 
         if isinstance(var, list):
             valid_urls = len([x for x in var if (x is not None) and (x.strip() not in ['N/A', ''])])
@@ -94,14 +121,26 @@ def rule_high_volume_address(
     threshold:     int = 10,
     lookback_days: int = 1,
 ) -> RuleResult:
-    """
-    Rule 3: For invoice parsing, if the seller_address appears in more than
-    `threshold` completed invoice records within `lookback_days` → score 3.
+    """Rule 3: Seller address appears on many invoices within a lookback window.
+
+    Args:
+        attrs: Extracted attributes for the content.
+        threshold: Minimum count (strictly greater than this threshold fires).
+        lookback_days: Lookback window in days.
+
+    Returns:
+        A `RuleResult` fired when the seller address matches more than
+        `threshold` invoice records in the archive within `lookback_days`.
     """
     RULE_ID     = "RULE_003"
     DESCRIPTION = f"Seller address linked to >{threshold} invoices in past {lookback_days}d"
 
     def no_fire() -> RuleResult:
+        """Return a non-fired result for this rule.
+
+        Returns:
+            A `RuleResult` with `fired=False` and score `0`.
+        """
         return RuleResult(
             rule_id     = RULE_ID,
             description = DESCRIPTION,
@@ -164,14 +203,26 @@ def rule_multi_phone_nr_address(
     threshold:     int = 5,
     lookback_days: int = 1,
 ) -> RuleResult:
-    """
-    Rule 4: For invoice parsing, if the seller_address is associated with more than
-    `threshold` invoice phone number within `lookback_days` → score 4.
+    """Rule 4: Seller address appears with many distinct phone numbers.
+
+    Args:
+        attrs: Extracted attributes for the content.
+        threshold: Minimum unique phone number count (strictly greater fires).
+        lookback_days: Lookback window in days.
+
+    Returns:
+        A `RuleResult` fired when the seller address is associated with
+        more than `threshold` unique seller phone numbers within the window.
     """
     RULE_ID     = "RULE_004"
     DESCRIPTION = f"Seller address linked to >{threshold} invoices phone numbers in past {lookback_days}d"
 
     def no_fire() -> RuleResult:
+        """Return a non-fired result for this rule.
+
+        Returns:
+            A `RuleResult` with `fired=False` and score `0`.
+        """
         return RuleResult(
             rule_id     = RULE_ID,
             description = DESCRIPTION,
@@ -233,8 +284,13 @@ def rule_multi_phone_nr_address(
 
 # ── Rule 5 ─────────────────────────────────────────────────────────────────
 def rule_item_mismatch_market(attrs: Attributes) -> RuleResult:
-    """
-    Rule 5: Item picture and description on market place don't match -> score 4.
+    """Rule 5: Marketplace listing picture/description mismatch.
+
+    Args:
+        attrs: Extracted attributes for the content.
+
+    Returns:
+        A `RuleResult` fired when `listed_item_match` is explicitly `No`.
     """
     RULE_ID = "RULE_005"
     fired = (
@@ -252,8 +308,13 @@ def rule_item_mismatch_market(attrs: Attributes) -> RuleResult:
 
 # ── Rule 6 ─────────────────────────────────────────────────────────────────
 def img_contain_pii_market(attrs: Attributes) -> RuleResult:
-    """
-    Rule 6: Item picture contains PII info, e.g. email, phone_nr, social media account etc -> score 4.
+    """Rule 6: Marketplace image appears to contain PII.
+
+    Args:
+        attrs: Extracted attributes for the content.
+
+    Returns:
+        A `RuleResult` fired when `pic_contain_contact_info` is `Yes`.
     """
     RULE_ID = "RULE_006"
     fired = (
@@ -281,6 +342,17 @@ RULES = [
 
 # ── Scorer ─────────────────────────────────────────────────────────────────
 def score(attrs: Attributes, temp: float=1.0) -> ScoreResult:
+    """Compute a final risk score and risk label from extracted attributes.
+
+    Args:
+        attrs: Extracted attributes for the input content.
+        temp: Temperature parameter used to convert total rule score into a
+            risk probability-like value.
+
+    Returns:
+        A `ScoreResult` containing `risk_score`, `risk_level`, `rules_fired`,
+        and a human-readable summary.
+    """
     log.info("── Fraud Scoring ───────────────────────")
 
     results      = [rule(attrs) for rule in RULES]

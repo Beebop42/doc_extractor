@@ -6,6 +6,19 @@ from utils import log
 SUPPORTED = {"jpg", "jpeg", "png", "pdf"}
 
 def read_file(file_path: str) -> tuple[FileMetadata, bytes, str]:
+    """Read and validate an input file, returning metadata and bytes.
+
+    Args:
+        file_path: Path to the input file.
+
+    Returns:
+        A tuple of `(metadata, raw_bytes, mime_type)`.
+
+    Raises:
+        FileNotFoundError: If `file_path` does not exist.
+        ValueError: If the extension is unsupported, the file is empty, or
+            the file magic bytes do not match the declared type.
+    """
     path = Path(file_path)
 
     if not path.exists():

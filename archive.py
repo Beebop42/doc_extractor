@@ -13,6 +13,11 @@ ARCHIVE_PATH = Path("archive/records.csv")
 
 # ── Derive columns from dataclass ─────────────────────────────────────────
 def get_attribute_columns() -> list[str]:
+    """Return the list of attribute column names derived from `Attributes`.
+
+    Returns:
+        A list of dataclass field names for `schema.Attributes`.
+    """
     return [f.name for f in fields(Attributes)]
 
 
@@ -42,7 +47,17 @@ ALL_COLUMNS = META_COLUMNS + get_attribute_columns()
 
 # ── Serialize Attributes to flat dict ─────────────────────────────────────
 def attributes_to_dict(attrs: Attributes) -> dict:
-    """Convert Attributes dataclass to a flat dict, serializing lists to JSON."""
+    """Convert `Attributes` dataclass to a flat dictionary.
+
+    List-typed attributes are serialized as JSON strings so they can be
+    stored in a CSV file.
+
+    Args:
+        attrs: The `schema.Attributes` instance to serialize.
+
+    Returns:
+        A flat dictionary of attribute values suitable for writing to CSV.
+    """
     result = {}
     for f in fields(attrs):
         val = getattr(attrs, f.name)
@@ -55,7 +70,14 @@ def attributes_to_dict(attrs: Attributes) -> dict:
 
 # ── Deserialize row back to Attributes ────────────────────────────────────
 def dict_to_attributes(row: dict) -> Attributes:
-    """Reconstruct Attributes from a CSV row dict."""
+    """Reconstruct an `Attributes` dataclass instance from a CSV row.
+
+    Args:
+        row: A dictionary representing a CSV row (string values).
+
+    Returns:
+        An `Attributes` object constructed from the row contents.
+    """
     kwargs = {}
     for f in fields(Attributes):
         val = row.get(f.name, "")
@@ -71,6 +93,14 @@ def dict_to_attributes(row: dict) -> Attributes:
 
 # ── Load or create archive ─────────────────────────────────────────────────
 def load_archive() -> pd.DataFrame:
+    """Load the historical pipeline archive from `archive/records.csv`.
+
+    If the file does not exist, returns an empty DataFrame with the expected
+    columns.
+
+    Returns:
+        A pandas DataFrame containing historical records.
+    """
     ARCHIVE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     if ARCHIVE_PATH.exists():
@@ -95,6 +125,18 @@ def update_archive(
     page_count:   int   = 1,
     file_size_kb: float = 0.0,
 ) -> pd.DataFrame:
+    """Insert or update a record in `archive/records.csv`.
+
+    Args:
+        source_file: Input file path (used as a stable record key).
+        attrs: Extracted attributes for the file.
+        stats: LLM processing statistics (latency/tokens/finish_reason).
+        page_count: Number of pages derived from the input.
+        file_size_kb: File size in kilobytes.
+
+    Returns:
+        The updated archive DataFrame.
+    """
 
     df = load_archive()
 
@@ -127,26 +169,3 @@ def update_archive(
     log.info(f"  Total tokens : {stats.get('total_tokens', 0)}")
 
     return df
-
-# ── Query helpers ──────────────────────────────────────────────────────────
-def get_by_status(status: str) -> pd.DataFrame:
-    return load_archive().pipe(lambda df: df[df["status"] == status])
-
-def get_by_event_type(event_type: str) -> pd.DataFrame:
-    return load_archive().pipe(lambda df: df[df["event_type"] == event_type])
-
-def get_summary() -> pd.DataFrame:
-    df = load_archive()
-    return (
-        df.groupby(["event_type", "status"])
-        .size()
-        .reset_index(name="count")
-    )
-
-def get_as_attributes(source_file: str) -> Attributes | None:
-    """Retrieve a row and reconstruct it as an Attributes dataclass."""
-    df = load_archive()
-    rows = df[df["source_file"] == source_file]
-    if rows.empty:
-        return None
-    return dict_to_attributes(rows.iloc[0].to_dict())
