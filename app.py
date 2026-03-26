@@ -45,6 +45,7 @@ if uploaded_file:
         with st.spinner("Analysing file..."):
             try:
                 result = run_pipeline(tmp_path)
+                result.file_id = tmp_path
             except Exception as e:
                 st.error(f"Pipeline failed: {e}")
                 st.stop()
@@ -60,7 +61,7 @@ if uploaded_file:
         st.markdown(f"""
             <div style="padding:16px; border-radius:8px; background:{colour};
                         color:white; text-align:center; font-size:24px; font-weight:bold;">
-                {risk} RISK — Score: {result.risk_score}
+                {risk} RISK — Score: {result.risk_score:.6f}
             </div>
         """, unsafe_allow_html=True)
 

@@ -13,7 +13,7 @@ def read_file(file_path: str) -> tuple[FileMetadata, bytes, str]:
 
     ext = path.suffix.lstrip(".").lower()
     if ext not in SUPPORTED:
-        raise ValueError(f"Unsupported file type: .{ext}")
+        raise ValueError(f"Unsupported file type: .{ext}. Supported types are {SUPPORTED}")
 
     mime_map = {
         "jpg": "image/jpeg", 
