@@ -60,6 +60,7 @@ def parse(pages: list[str],
           model: str = "google/gemini-2.0-flash-001", 
           model_temperature: float=1.0,
           mime_type: str = "image/png") -> tuple[Attributes | None, dict]:
+
     match category:
         case "invoice":
             prompt = INVOICE_PROMPT
